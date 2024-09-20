@@ -1,20 +1,19 @@
-const canvas = document.getElementById("my-canvas")
 
-const ctx = canvas.getContext('2d')
 
-const columns = ["Name", "Age"]
+let columns = ["Name", "Age"]
 let data = [];
 
-let hitBoxes = new Array();
+export let hitBoxes = new Array();
 
 let selected = null
 let xPos = 0;
 let yPos = 0;
 
 import { submit } from "./handleSubmit.js"
+import { ctx } from "./init.js";
 
 let counter = 1
-const createInput =(name, rect) => {
+export const createInput =(name, rect) => {
     return {
         label: name,
         value: '',
@@ -27,15 +26,13 @@ function coordinate(x, y){
     this.y = y;
 }
 
-const form = {
-    name: createInput("Name", {x: 5, y: 0, w: 250, h: 25}),
-    age: createInput("Age", {x: 5, y: 0, w: 150, h: 25})
-}
+
 
 const drawInput = (input) => {
     ctx.strokeRect(input.rect.x + 25, input.rect.y, input.rect.w, input.rect.h)
     ctx.font = "24px Unknown, serif"
     ctx.fillText(input.value, input.rect.x + 30, input.rect.y + 20)
+    addHit(input.rect.x + 25, input.rect.y, input.rect.w, input.rect.h, input, selectInput)
 }
 
 const handleSubmit = (test) => {
@@ -43,34 +40,18 @@ const handleSubmit = (test) => {
     formReset();
 }
 
-const handleMouse = (event) => {
-    if(selectInput(event)){
-        return
-    } else {
-        handleReset(event);
-    }
-    if(submit(event.x, event.y, form.name.value, form.age.value)){
-        handleSubmit(submit(event.x, event.y, form.name.value, form.age.value))
-    }
-
-    if(gatherData(event)){
-        console.log("Hit Info")
-        return
-    }
+export const handleMouse = (event) => {
+    hitBoxes.forEach(hitbox => {
+        if(event.x >= hitbox.x && event.x <= hitbox.x + hitbox.w && event.y >= hitbox.y && event.y <= hitbox.y + hitbox.h) {
+            hitbox.call(hitbox.obj);
+            return
+        }
+    });
 }
 
-const gatherData = (event) => {
-    for(var i = 0; i < hitBoxes.length; i++){
-        console.log(event.y + " " + ((hitBoxes[i].y) + 8))
-        if(event.x >= hitBoxes[i].x && event.x <= (hitBoxes[i].x + 100) && event.y >= hitBoxes[i].y && event.y <= ((hitBoxes[i].y) + 18)){
-            form.name.value = data[i].Name;
-            form.age.value = data[i].Age;
-            data.splice(i, 1)
-            hitBoxes.splice(i, 1)
-            resetCounter();
-            createButton();
-        }
-    }
+function addHit(x, y, w, h, obj, call) {
+    hitBoxes.push({x:x, y:y, w:w, h:h, obj:obj, call:call})
+    // <3
 }
 
 const handleReset = (event) => {
@@ -81,19 +62,11 @@ const handleReset = (event) => {
     }
 }
 
-const selectInput = (event) => {
-    let hit = false
-    selected = Object.values(form).find(input => {
-        if(event.x >= input.rect.x && event.x <= input.rect.x + input.rect.w && event.y >= input.rect.y && event.y <= input.rect.y + input.rect.h){
-            hit = true
-            return true;
-        }
-    });
-
-    return hit
+const selectInput = (obj) => {
+    selected = obj;
 }
 
-const handleKeys = (event) => {
+export const handleKeys = (event) => {
     let kc = event.keyCode;
     if(!selected) {
         return
@@ -144,85 +117,85 @@ function clearButtons(){
     hitBoxes = [];
     createButton();
 }
-
-const drawTableData = () => {
-    xPos = 510;
-    yPos = 40;
-
-    for(var i = 0; i < hitBoxes.length; i++){
-        ctx.strokeRect(hitBoxes[i].x, hitBoxes[i].y, 100, 15)
+export class table {
+    constructor({data = [], columns = [], x, y, w, h}){
+        this.data = data;
+        this.columns = columns;
+        this.x = x||0;
+        this.y = y||0;
+        this.w = w||0;
+        this.h = h||0;
     }
 
-    data.forEach(d=>{
-        columns.forEach(col=> {
-            ctx.font = "18px serif"
-            ctx.fillText(d[col], xPos + 5, yPos + 5)
-            xPos += 150
+    draw(){    
+        let curX = this.x;
+        let curY = this.y + 15;
+
+        ctx.strokeRect(this.x, this.y, this.w, this.h)
+        
+        this.columns.forEach(col=> {
+            ctx.font = "bold 18px serif";
+            ctx.fillStyle = "black";
+            ctx.fillText(col, curX + 5, curY);
+            ctx.moveTo(curX, curY + 6);
+            ctx.lineTo(curX + 100,curY + 6)
+            ctx.stroke();
+            curX += 150
         });
+    
+        this.data.forEach(d=>{
+            this.columns.forEach(col=> {
+                ctx.font = "18px serif"
+                ctx.fillText(d[col], curX + 5, curY + 5)
+                curX += 150
+            });
+    
+            curX = this.x;
+            curY += 20;
+        });
+    }
+}
+export class form {
+    constructor({fields = {}, x, y, w, h, submit}){
+        this.fields = fields;
+        this.x = x||0;
+        this.y = y||0;
+        this.w = w||0;
+        this.h = h||0;
+        this.submit = submit;
+    }
 
-        xPos = 510;
-        yPos += 20;
-    });
+    draw(){
+        let curX = this.x
+        let curY = this.y + 15
+        ctx.strokeStyle = "blue"
+        ctx.strokeRect(this.x, this.y, this.w, this.h)
+    
+        
+        Object.entries(this.fields).forEach(([k, v]) => {
+            ctx.font = "bold 18px serif"
+            ctx.fillText(`${v.label}:`, curX + 5, curY);
+            v.rect.x = curX - 20;
+            v.rect.y = curY + 5;
+            drawInput(v);
+            curY += v.rect.h + 25;
+        });
+        
+    
+        ctx.strokeRect(5, 450, 100, 45);
+        ctx.font = "bold 24px serif"
+        ctx.fillText("SUBMIT", 8, 480)
+        addHit(5, 450, 100, 45, this, this.submit)
+    
+        // ctx.strokeRect(110, 450, 100, 45);
+        // ctx.font = "bold 24px serif"
+        // ctx.fillText("RESET", 118, 480)
+    }
 }
 
-const drawForm = () => {
-    let xPos = 0;
-    let yPos = 25;
+export const personTable = new table({columns:["Name", "Age"], x:5, y:5, w:500, h:500})
+export const personForm = new form({fields:{name: createInput("Name", {x: 5, y: 0, w: 250, h: 25}), age: createInput("Age", {x: 5, y: 0, w: 150, h: 25})}, x:510, y:5, w:500, h:500, submit:(obj) => {personTable.data.push({Name: obj.fields.name.value, Age: obj.fields.age.value})}})
 
-    ctx.strokeStyle = "blue"
-    ctx.strokeRect(0,0, 500, 500)
-
-    //Input Field Tags
-    ctx.font = "bold 18px serif"
-    ctx.fillText("Name:", 5, 20)
-    ctx.fillText("Age:", 5, 70)
-
-    Object.values(form).forEach(input => {
-        input.rect.x = xPos - 20;
-        input.rect.y = yPos;
-        drawInput(input);
-        yPos += input.rect.h + 25;
-    });
-
-    ctx.strokeRect(5, 450, 100, 45);
-    ctx.font = "bold 24px serif"
-    ctx.fillText("SUBMIT", 8, 480)
-
-    ctx.strokeRect(110, 450, 100, 45);
-    ctx.font = "bold 24px serif"
-    ctx.fillText("RESET", 118, 480)
-
-    ctx.strokeRect(505,0,495,500)
-    //Column Headers
-    xPos = 510
-    yPos = 20
-	columns.forEach(col=> {
-        ctx.font = "bold 18px serif";
-        ctx.fillStyle = "black";
-		ctx.fillText(col, xPos + 5, yPos);
-        ctx.moveTo(xPos, yPos + 6);
-        ctx.lineTo(xPos + 100,yPos + 6)
-        ctx.stroke();
-		xPos += 150
-    });
-
-     //Go Down a spot
-     xPos = 510;
-     yPos += 20;
-
-}
-
-canvas.addEventListener("mouseup", handleMouse);
-window.addEventListener("keyup", handleKeys);
-
-function updateUI() {
-    window.setTimeout(updateUI, 20)
-    ctx.clearRect(0,0, 1000, 500)
-    drawTableData()
-    drawForm()
-}
-
-updateUI()
 
 const formReset = () => {
     form.name.value = ""
