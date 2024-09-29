@@ -1,32 +1,44 @@
 import { canvas, ctx } from "./init.js";
-import { createInput, form, handleKeys, handleMouse, hitBoxes, personForm, personTable, table } from "./newapplication.js";
+import {
+  animalNavbar,
+  createInput,
+  form,
+  handleKeys,
+  handleMouse,
+  hitBoxes,
+  personNavbar,
+  personForm,
+  personTable,
+  table,
+  exportNavId,
+  animalForm,
+  animalTable,
+} from "./newapplication.js";
 
 //INIT of APP
 canvas.addEventListener("mouseup", handleMouse);
 window.addEventListener("keyup", handleKeys);
 
-const view1 = [
-    personForm, 
-    personTable
-]
+const personFormView = [personForm, personTable, personNavbar, animalNavbar];
 
-const view2 = [
-    personForm, 
-    personTable
-]
+const animalFormView = [animalForm, animalTable, personNavbar, animalNavbar];
 
-let view = view1
+let view = personFormView;
 
 function updateUI() {
-    window.setTimeout(updateUI, 20)
-    hitBoxes.length = 0;
-    ctx.clearRect(0,0, window.innerWidth, window.innerHeight)
-    //TODO: Loop through Navbar list of buttons, navbar change views, 2 differnet views
-    view.forEach(el => el.draw())
+  window.setTimeout(updateUI, 20);
+  hitBoxes.length = 0;
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  //TODO: Loop through Navbar list of buttons, navbar change views, 2 differnet views
+  if (exportNavId === 1) {
+    view = personFormView;
+  } else if (exportNavId === 2) {
+    view = animalFormView;
+  }
+  view.forEach((el) => el.draw());
 }
 
-updateUI()
-
+updateUI();
 
 // const test = {x:300, y:0, w:0, h:0}
 // let {x, y} = test
